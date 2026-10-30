@@ -57,8 +57,18 @@ export class BrowserMediumClient {
   private currentHeadless: boolean | null = null;
 
   // Stable locations, independent of where the MCP server is launched from.
-  private userDataDir = join(homedir(), '.medium-mcp-chrome');
-  private sessionFile = join(homedir(), '.medium-mcp-session.json');
+  // MEDIUM_SESSION_DIR overrides the parent folder for both.
+  private sessionDir = process.env.MEDIUM_SESSION_DIR || homedir();
+  private userDataDir = join(this.sessionDir, '.medium-mcp-chrome');
+  private sessionFile = join(this.sessionDir, '.medium-mcp-session.json');
+
+  /**
+   * Headless mode is OFF by default and should stay that way: Medium's
+   * Cloudflare challenge serves an interstitial to headless Chromium, so
+   * article reads come back empty. MEDIUM_HEADLESS=true is an escape hatch
+   * for servers with no display, not a speed optimisation.
+   */
+  private headlessPreferred = process.env.MEDIUM_HEADLESS === 'true';
 
   private readonly PUBLISHED_URL = 'https://medium.com/me/stories?tab=posts-published';
 
@@ -166,8 +176,11 @@ export class BrowserMediumClient {
    * then drops back to headless. The login is reused silently afterwards.
    */
   async ensureLoggedIn(): Promise<boolean> {
-    // Fast path: verify auth in the headless background context.
-    await this.ensureBrowser(true);
+    // Fast path: verify auth in the background context. The mode follows
+    // headlessPreferred — by default that is HEADED, because headless Chromium
+    // gets a Cloudflare interstitial and the auth check would read the
+    // challenge page as "not logged in", forcing a pointless login every time.
+    await this.ensureBrowser(this.headlessPreferred);
     if (await this.verifyLoggedIn()) return true;
 
     // Need the user: relaunch the SAME profile with a visible window.
@@ -192,10 +205,10 @@ export class BrowserMediumClient {
     }
 
     // Snapshot the full session NOW (captures session cookies + cf_clearance),
-    // then return to a headless background context that re-seeds from it.
+    // then return to the background context that re-seeds from it.
     await this.persistState();
-    console.error('✅ Login captured. Switching to headless background mode...');
-    await this.ensureBrowser(true);
+    console.error('✅ Login captured. Session saved for future runs.');
+    await this.ensureBrowser(this.headlessPreferred);
     return await this.verifyLoggedIn();
   }
 
@@ -258,7 +271,7 @@ export class BrowserMediumClient {
     // Headed mode: headless Chromium trips Medium's Cloudflare bot challenge and
     // the extraction then runs against the "Attention Required!" interstitial.
     // Must run BEFORE the null check so the browser exists on a cold start.
-    await this.ensureBrowser(false);
+    await this.ensureBrowser(this.headlessPreferred);
     if (!this.page) throw new Error('Browser not initialized');
 
     console.error(`📖 Fetching article content from: ${url}`);
@@ -484,7 +497,7 @@ export class BrowserMediumClient {
   /** Search Medium (no login required). */
   async searchMediumArticles(keywords: string[]): Promise<MediumArticle[]> {
     // Headed for the same reason as getArticleContent: headless trips Cloudflare.
-    await this.ensureBrowser(false);
+    await this.ensureBrowser(this.headlessPreferred);
     if (!this.page) throw new Error('Browser not initialized');
 
     const searchQuery = keywords.join(' ');
