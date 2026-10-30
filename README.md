@@ -1,5 +1,12 @@
 # <img src="https://cdn-static-1.medium.com/_/fp/icons/Medium-Avatar-500x500.svg" alt="Medium Logo" width="32" height="32"> Medium MCP Server (Browser-Based)
 
+> **This is a maintained fork.** Upstream [`jackyckma/medium-mcp-server`](https://github.com/jackyckma/medium-mcp-server)
+> stopped being updated in July 2025 and Medium's DOM moved on. Two of its five
+> tools were broken against the live site. This fork merges the two community
+> fixes that were still open upstream ([PR #2](https://github.com/jackyckma/medium-mcp-server/pull/2),
+> [PR #4](https://github.com/jackyckma/medium-mcp-server/pull/4)) and adds the fixes
+> below. See [Fork status](#fork-status) for the full before/after.
+
 ## Overview
 Medium MCP (Model Context Protocol) is a browser-based solution for programmatically interacting with Medium's content ecosystem. Since Medium discontinued their public API for new users, this server uses browser automation to provide intelligent and context-aware content management.
 
@@ -8,7 +15,7 @@ Medium stopped issuing new API tokens in 2023, making traditional API integratio
 - ✅ **Work without API tokens** - Uses your existing Medium login session
 - ✅ **Full functionality** - Publish, search, and manage your Medium content
 - ✅ **Secure** - Saves your login session locally for reuse
-- ✅ **Interactive** - Opens browser for initial login, then runs headlessly
+- ✅ **Interactive** - Opens a browser window; the session is reused on later runs
 
 ## 📖 Deep Dive Article
 Want to understand the full story behind Medium MCP? Check out the comprehensive article:
@@ -17,17 +24,18 @@ Want to understand the full story behind Medium MCP? Check out the comprehensive
 
 ## Key Features
 - 🤖 **Browser automation** for Medium interaction
-- 📝 **Article publishing** with title, content, and tags
+- 📝 **Article publishing** — Markdown input, native Medium blocks, local image upload
 - 📚 **Retrieve your articles** from your Medium profile
 - 🔍 **Search Medium articles** by keywords
-- 💾 **Session persistence** - login once, use everywhere
-- 🎯 **Claude integration** via Model Context Protocol
+- 💾 **Session persistence** — login once, use everywhere
+- 🎯 **Hermes / Claude / Cursor integration** via Model Context Protocol
+- 🧪 **Test suite** — unit tests for the Markdown → editor conversion
 
 ## Technology Stack
 - TypeScript
-- Model Context Protocol (MCP)
-- Playwright Browser Automation
-- Advanced Content Parsing
+- Model Context Protocol (MCP) SDK 1.32
+- Playwright 1.64 (Chromium)
+- Zod 4
 
 ## Getting Started
 
